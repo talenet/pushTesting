@@ -1,0 +1,113 @@
+#!/usr/bin/python
+#
+# Gerrit script to 
+
+# The script assumes the following arguments:
+#
+# Called whenever a change has been merged.
+#
+# change-merged --change <change id> --change-url <change url> --project <project name> --branch <branch> --submitter <submitter> --commit <sha1>
+#
+# The details for each parameter are located here:
+#
+# https://gerrit.telekollektiv.org/plugins/hooks/Documentation/hooks.md
+#
+# This script requires variables to be set:
+#
+# GIT_BIN should point to the Git binary on the system.
+#
+# GIT_DIR should point to the projects Git repository.
+#
+# Originally written by Stan Hu <stanhu at gma i l.com>
+# Adapted by Henry Bubert <cryptix at riseup>
+
+import os
+import subprocess
+import sys
+import pprint
+from shutil import rmtree
+from tempfile import gettempdir
+# deprecated! https://docs.python.org/2/library/argparse.html#upgrading-optparse-code
+from optparse import OptionParser 
+
+# logging redirect
+timedHash = hash(os.times())
+logFile = os.path.join(gettempdir(), 'gerrit_change_merged.%s.log' % timedHash)
+log = open(logFile, 'w')
+
+GIT_BIN="/usr/bin/git"
+
+try:
+    GIT_DIR = os.environ['GIT_DIR']
+except KeyError, e:
+    print >> log, "ERROR: envvar missing: %s" % e
+    sys.exit(1)
+
+# https://stackoverflow.com/a/26853961
+def merge_two_dicts(x, y):
+    z = x.copy()   # start with x's keys and values
+    z.update(y)    # modifies z with y's keys and values & returns None
+    return z
+
+def execCmd(command, cwd=".", envOverwrite={}):
+    e = os.environ.copy()
+    e = merge_two_dicts(e, envOverwrite)
+    p = subprocess.Popen(command, stdout = log, stderr = log, cwd = cwd, env = e)
+    p.communicate()
+
+def fwdPushTesting(options, tmpdir):
+    cloneBare = [GIT_BIN, "clone", "--bare", GIT_DIR, tmpdir]
+    execCmd(cloneBare)
+    pushCmd = [GIT_BIN, "push", "git@github.com:talenet/pushTesting.git"]
+    envWsshcmd = { # ssh identityFile without .ssh/config file: https://superuser.com/a/912281
+        "GIT_SSH": "/var/gerrit/hooks/wrappedSSH"
+    }
+    execCmd(pushCmd, cwd = tmpdir, envOverwrite=envWsshcmd)
+
+def fwdTaleNet():
+    print >> log, "TODO" 
+    sys.exit(1)
+
+projhandlers = {
+    "pushTesting": fwdPushTesting,
+    "talenet": fwdTaleNet,
+}
+
+def main():
+    parser = OptionParser()
+    parser.add_option("-i", "--change", dest="change_id", help="Gerrit change ID")
+    parser.add_option("-u", "--change-url", dest="change_url", help="GIT Change URL")
+    parser.add_option("-o", "--change-owner", dest="change_owner", help="The gerrit owner of the change")
+    parser.add_option("-p", "--project", dest="project_name", help="Gerrit Project Name")
+    parser.add_option("-b", "--branch", dest="branch_name", help="Gerrit Branch Name")
+    parser.add_option("-s", "--submitter", dest="submitter", help="Gerrit Submitter")
+    parser.add_option("-c", "--commit", dest="commit", help="GIT Commit SHA ID")
+    parser.add_option("-n", "--newrev", dest="newrev", help="the new sha1 rev")
+    parser.add_option("-t", "--topic", dest="topic", help="gerrit topic")
+    
+    options, args = parser.parse_args()
+    
+    if options.commit is None or options.branch_name is None or options.submitter is None or options.project_name is None:
+        print >> log, "USAGE Error!"
+        pprint.pprint(options, indent=2, stream=log)
+	parser.print_help()
+        sys.exit(1)
+
+    # create tmpdir and log what's happening
+    tmpdir = os.path.join(gettempdir(), 'gerrit_change_merged.{}.{}'.format(options.project_name, timedHash))
+    os.makedirs(tmpdir)
+    print >> log, "change(%s) for proj(%s): cloning from %s to %s" % (options.change_id, options.project_name, GIT_DIR, tmpdir)
+
+    try:
+        projhandlers[options.project_name](options, tmpdir)
+    except KeyError, e:
+        print >> log, "ERROR: unhandled project: %s" % e
+        sys.exit(1)
+
+    # cleanup if no error
+    rmtree(tmpdir)
+    log.close()
+    os.remove(logFile) 
+
+if __name__ == '__main__':
+    main()

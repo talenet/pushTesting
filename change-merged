@@ -28,7 +28,7 @@ import pprint
 from shutil import rmtree
 from tempfile import gettempdir
 # deprecated! https://docs.python.org/2/library/argparse.html#upgrading-optparse-code
-from optparse import OptionParser 
+from optparse import OptionParser
 
 # logging redirect
 timedHash = hash(os.times())
@@ -49,6 +49,9 @@ def merge_two_dicts(x, y):
     z.update(y)    # modifies z with y's keys and values & returns None
     return z
 
+# ssh identityFile without .ssh/config file: https://superuser.com/a/912281
+envWsshcmd = {"GIT_SSH": "/var/gerrit/hooks/wrappedSSH"}
+
 def execCmd(command, cwd=".", envOverwrite={}):
     e = os.environ.copy()
     e = merge_two_dicts(e, envOverwrite)
@@ -56,17 +59,20 @@ def execCmd(command, cwd=".", envOverwrite={}):
     p.communicate()
 
 def fwdPushTesting(options, tmpdir):
-    cloneBare = [GIT_BIN, "clone", "--bare", GIT_DIR, tmpdir]
-    execCmd(cloneBare)
-    pushCmd = [GIT_BIN, "push", "git@github.com:talenet/pushTesting.git"]
-    envWsshcmd = { # ssh identityFile without .ssh/config file: https://superuser.com/a/912281
-        "GIT_SSH": "/var/gerrit/hooks/wrappedSSH"
-    }
-    execCmd(pushCmd, cwd = tmpdir, envOverwrite=envWsshcmd)
-
-def fwdTaleNet():
-    print >> log, "TODO" 
+    # deploy keys can't be used multiple times
+    print >> log, "ERROR: defunct! needs a new deploy key"
     sys.exit(1)
+    # cloneBare = [GIT_BIN, "clone", "--bare", GIT_DIR, tmpdir]
+    # execCmd(cloneBare)
+    # pushCmd = [GIT_BIN, "push", "git@github.com:talenet/pushTesting.git"]
+    # execCmd(pushCmd, cwd = tmpdir, envOverwrite=envWsshcmd)
+
+def fwdTaleNet(options, tmpdir):
+    cloneBare = [GIT_BIN, "clone", "--bare", GIT_DIR, tmpdir]
+    # TODO: might be possible to just cd into GIT_DIR and push from there
+    execCmd(cloneBare)
+    pushCmd = [GIT_BIN, "push", "git@github.com:talenet/talenet.git"]
+    execCmd(pushCmd, cwd = tmpdir, envOverwrite=envWsshcmd)
 
 projhandlers = {
     "pushTesting": fwdPushTesting,

@@ -59,24 +59,22 @@ def execCmd(command, cwd=".", envOverwrite={}):
     p.communicate()
 
 def fwdPushTesting(options, tmpdir):
-    # deploy keys can't be used multiple times
-    print >> log, "ERROR: defunct! needs a new deploy key"
-    sys.exit(1)
-    # cloneBare = [GIT_BIN, "clone", "--bare", GIT_DIR, tmpdir]
-    # execCmd(cloneBare)
-    # pushCmd = [GIT_BIN, "push", "git@github.com:talenet/pushTesting.git"]
-    # execCmd(pushCmd, cwd = tmpdir, envOverwrite=envWsshcmd)
+    pushCmd = [GIT_BIN, "push", "ghPushTesting:talenet/pushTesting.git"]
+    execCmd(pushCmd, cwd = GIT_DIR, envOverwrite=envWsshcmd)
+
+def fwdSSBTaleQuery(options, tmpdir):
+    pushCmd = [GIT_BIN, "push", "ghSSBTaleQuery:talenet/ssb-talequery.git"]
+    execCmd(pushCmd, cwd = GIT_DIR, envOverwrite=envWsshcmd)
 
 def fwdTaleNet(options, tmpdir):
-    cloneBare = [GIT_BIN, "clone", "--bare", GIT_DIR, tmpdir]
-    # TODO: might be possible to just cd into GIT_DIR and push from there
-    execCmd(cloneBare)
-    pushCmd = [GIT_BIN, "push", "git@github.com:talenet/talenet.git"]
-    execCmd(pushCmd, cwd = tmpdir, envOverwrite=envWsshcmd)
+    pushCmd = [GIT_BIN, "push", "ghTaleNet:talenet/talenet.git", "--all"]
+    execCmd(pushCmd, cwd = GIT_DIR, envOverwrite=envWsshcmd)
 
 projhandlers = {
     "pushTesting": fwdPushTesting,
     "talenet": fwdTaleNet,
+    "ssb-talequery": fwdSSBTaleQuery,
+    #tale-blog TODO: hook into docker pipeline (uses dumb cronjob currently)
 }
 
 def main():

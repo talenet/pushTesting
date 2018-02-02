@@ -1,0 +1,18 @@
+Host ghPushTesting
+	HostName github.com
+	User git
+	IdentityFile /var/gerrit/hooks/gh_pushtesting
+
+Host ghTaleNet
+	HostName github.com
+	User git
+	IdentityFile /var/gerrit/hooks/gh_talenet
+
+Host ghSSBTaleQuery
+	HostName github.com
+	User git
+	IdentityFile /var/gerrit/hooks/gh_talequery
+
+Host *
+	UserKnownHostsFile /var/gerrit/hooks/github_known_hosts
+

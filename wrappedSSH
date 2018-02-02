@@ -1,3 +1,3 @@
 #!/bin/sh
 gdir=/var/gerrit/hooks/
-exec /usr/bin/ssh -i $gdir/deployment_key -o UserKnownHostsFile=$gdir/github_known_hosts -F /dev/null "$@"
+exec /usr/bin/ssh -F $gdir/ssh_config "$@"
